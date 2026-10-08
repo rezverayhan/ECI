@@ -38,15 +38,32 @@ export function ItHealthCard({
         />
       </div>
 
-      <div className="rounded-md border border-border bg-canvas/40 p-2.5">
-        <div className="flex items-start gap-2">
+      {/* Importance-Based Soft Glass Banner */}
+      <div
+        className={
+          isHealthy
+            ? 'rounded-md border border-success/20 bg-success/[0.06] backdrop-blur-xs p-3 transition-colors'
+            : 'rounded-md border border-warning/25 bg-warning/[0.07] backdrop-blur-xs p-3 transition-colors'
+        }
+      >
+        <div className="flex items-start gap-2.5">
           {isHealthy ? (
-            <CheckCircle2 className="size-4 text-success shrink-0 mt-0.5" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-success/15 text-success shrink-0 mt-0.5">
+              <CheckCircle2 className="size-3.5" aria-hidden />
+            </div>
           ) : (
-            <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-warning/15 text-warning shrink-0 mt-0.5">
+              <AlertTriangle className="size-3.5" aria-hidden />
+            </div>
           )}
           <div className="text-xs">
-            <span className="font-semibold text-text block">
+            <span
+              className={
+                isHealthy
+                  ? 'font-semibold text-success block'
+                  : 'font-semibold text-warning block'
+              }
+            >
               {isHealthy ? 'IT setup healthy' : 'Configuration incomplete'}
             </span>
             <p className="text-text-secondary mt-0.5 text-[11px]">
@@ -65,7 +82,13 @@ export function ItHealthCard({
             <Laptop className="size-3.5 text-text-muted" aria-hidden />
             <span>Hardware Asset</span>
           </div>
-          <span className={`font-semibold ${currentDevice ? 'text-success' : 'text-warning'}`}>
+          <span
+            className={
+              currentDevice
+                ? 'font-semibold text-success bg-success/[0.08] px-2 py-0.5 rounded text-[11px]'
+                : 'font-semibold text-warning bg-warning/[0.08] px-2 py-0.5 rounded text-[11px]'
+            }
+          >
             {currentDevice ? 'Assigned' : 'Missing'}
           </span>
         </div>
@@ -76,7 +99,13 @@ export function ItHealthCard({
             <Globe className="size-3.5 text-text-muted" aria-hidden />
             <span>Static IP Address</span>
           </div>
-          <span className={`font-semibold ${currentNetwork ? 'text-success' : 'text-warning'}`}>
+          <span
+            className={
+              currentNetwork
+                ? 'font-semibold text-success bg-success/[0.08] px-2 py-0.5 rounded text-[11px]'
+                : 'font-semibold text-warning bg-warning/[0.08] px-2 py-0.5 rounded text-[11px]'
+            }
+          >
             {currentNetwork ? 'Configured' : 'Unallocated'}
           </span>
         </div>
@@ -98,9 +127,15 @@ export function ItHealthCard({
             <LifeBuoy className="size-3.5 text-text-muted" aria-hidden />
             <span>Open Tickets</span>
           </div>
-          <span className={`font-semibold ${openIssues.length > 0 ? 'text-warning' : 'text-text-secondary'}`}>
-            {openIssues.length} {openIssues.length === 1 ? 'ticket' : 'tickets'}
-          </span>
+          {openIssues.length > 0 ? (
+            <span className="font-semibold text-warning bg-warning/[0.1] px-2 py-0.5 rounded text-[11px]">
+              {openIssues.length} {openIssues.length === 1 ? 'ticket' : 'tickets'}
+            </span>
+          ) : (
+            <span className="font-semibold text-text-secondary">
+              0 tickets
+            </span>
+          )}
         </div>
       </div>
     </SectionPanel>

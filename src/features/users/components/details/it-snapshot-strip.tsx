@@ -47,12 +47,14 @@ export function ItSnapshotStrip({
     <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <div className="grid grid-cols-2 divide-y divide-border sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-7">
         {/* 1. Machine */}
-        <div className="flex flex-col gap-0.5 p-3.5 sm:p-4">
+        <div className="flex flex-col gap-1 p-3.5 sm:p-4">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <Cpu className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-primary/[0.08] text-primary shrink-0">
+              <Cpu className="size-3" aria-hidden />
+            </div>
             <span>Machine</span>
           </div>
-          <span className="text-sm font-medium text-text truncate" title={machineName}>
+          <span className="text-sm font-medium text-text truncate font-mono" title={machineName}>
             {machineName}
           </span>
           <span className="text-xs text-text-muted truncate">
@@ -61,9 +63,11 @@ export function ItSnapshotStrip({
         </div>
 
         {/* 2. IP Address */}
-        <div className="flex flex-col gap-0.5 p-3.5 sm:p-4 border-l border-border sm:border-l-0">
+        <div className="flex flex-col gap-1 p-3.5 sm:p-4 border-l border-border sm:border-l-0">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <Globe className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-primary/[0.08] text-primary shrink-0">
+              <Globe className="size-3" aria-hidden />
+            </div>
             <span>IP Address</span>
           </div>
           <span className="text-sm font-medium text-text truncate font-mono" title={ipAddress}>
@@ -75,9 +79,11 @@ export function ItSnapshotStrip({
         </div>
 
         {/* 3. Current Device */}
-        <div className="flex flex-col gap-0.5 p-3.5 sm:p-4">
+        <div className="flex flex-col gap-1 p-3.5 sm:p-4">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <Laptop className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-primary/[0.08] text-primary shrink-0">
+              <Laptop className="size-3" aria-hidden />
+            </div>
             <span>Device</span>
           </div>
           <span className="text-sm font-medium text-text truncate" title={deviceName}>
@@ -89,9 +95,11 @@ export function ItSnapshotStrip({
         </div>
 
         {/* 4. Asset ID */}
-        <div className="flex flex-col gap-0.5 p-3.5 sm:p-4 border-l border-border sm:border-l-0">
+        <div className="flex flex-col gap-1 p-3.5 sm:p-4 border-l border-border sm:border-l-0">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <Barcode className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-primary/[0.08] text-primary shrink-0">
+              <Barcode className="size-3" aria-hidden />
+            </div>
             <span>Asset ID</span>
           </div>
           <span className="text-sm font-medium text-text truncate font-mono" title={assetId}>
@@ -103,9 +111,11 @@ export function ItSnapshotStrip({
         </div>
 
         {/* 5. Device Status */}
-        <div className="flex flex-col gap-0.5 p-3.5 sm:p-4">
+        <div className="flex flex-col gap-1 p-3.5 sm:p-4">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <CheckCircle2 className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-success/[0.1] text-success shrink-0">
+              <CheckCircle2 className="size-3" aria-hidden />
+            </div>
             <span>Asset State</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -125,9 +135,11 @@ export function ItSnapshotStrip({
         </div>
 
         {/* 6. License */}
-        <div className="flex flex-col gap-0.5 p-3.5 sm:p-4 border-l border-border sm:border-l-0">
+        <div className="flex flex-col gap-1 p-3.5 sm:p-4 border-l border-border sm:border-l-0">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <KeyRound className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-primary/[0.08] text-primary shrink-0">
+              <KeyRound className="size-3" aria-hidden />
+            </div>
             <span>License</span>
           </div>
           <span className="text-sm font-medium text-text truncate" title={licenseText}>
@@ -139,9 +151,11 @@ export function ItSnapshotStrip({
         </div>
 
         {/* 7. IP Phone */}
-        <div className="col-span-2 sm:col-span-1 flex flex-col gap-0.5 p-3.5 sm:p-4">
+        <div className="col-span-2 sm:col-span-1 flex flex-col gap-1 p-3.5 sm:p-4">
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-            <PhoneCall className="size-3.5 text-text-muted shrink-0" aria-hidden />
+            <div className="flex size-5 items-center justify-center rounded bg-primary/[0.08] text-primary shrink-0">
+              <PhoneCall className="size-3" aria-hidden />
+            </div>
             <span>IP Phone</span>
           </div>
           <span className="text-sm font-medium text-text truncate font-mono" title={phoneExtension}>

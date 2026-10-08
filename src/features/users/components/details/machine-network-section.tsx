@@ -79,8 +79,8 @@ export function MachineNetworkSection({
         }
       />
 
-      {/* Identity Hierarchy Visual Strip */}
-      <div className="rounded-lg border border-border bg-canvas px-3.5 py-2.5 mb-6">
+      {/* Identity Hierarchy Visual Strip with Subtle Glass Accents */}
+      <div className="rounded-lg border border-border/80 bg-canvas/70 backdrop-blur-xs px-3.5 py-2.5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2">
             <UserIcon className="size-3.5 text-text-muted" aria-hidden />
@@ -91,9 +91,11 @@ export function MachineNetworkSection({
           <ArrowRight className="size-3.5 text-text-muted hidden sm:block" aria-hidden />
 
           <div className="flex items-center gap-2">
-            <Cpu className="size-3.5 text-text-muted" aria-hidden />
+            <Cpu className="size-3.5 text-primary" aria-hidden />
             <span className="text-text-secondary">Machine:</span>
-            <span className="font-semibold text-primary">{machineName}</span>
+            <span className="font-semibold text-primary font-mono bg-primary/[0.08] px-2 py-0.5 rounded text-xs">
+              {machineName}
+            </span>
           </div>
 
           <ArrowRight className="size-3.5 text-text-muted hidden sm:block" aria-hidden />

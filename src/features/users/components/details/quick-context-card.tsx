@@ -1,5 +1,4 @@
 import { SectionPanel } from '@/components/shared/section-panel'
-import { cn } from '@/lib/utils'
 import type {
   UserApplicationData,
   UserCurrentDeviceData,
@@ -59,8 +58,14 @@ export function QuickContextCard({
 
         <div>
           <dt className="text-[11px] font-medium text-text-secondary">Active IPv4</dt>
-          <dd className="mt-0.5 font-mono font-semibold text-text truncate">
-            {currentNetwork ? String(currentNetwork.ip_address.ip_address) : 'None'}
+          <dd className="mt-0.5 font-mono text-xs truncate">
+            {currentNetwork ? (
+              <span className="font-semibold text-primary bg-primary/[0.08] px-1.5 py-0.5 rounded">
+                {String(currentNetwork.ip_address.ip_address)}
+              </span>
+            ) : (
+              <span className="text-text-muted font-medium">None</span>
+            )}
           </dd>
         </div>
 
@@ -73,8 +78,16 @@ export function QuickContextCard({
 
         <div>
           <dt className="text-[11px] font-medium text-text-secondary">Open Tickets</dt>
-          <dd className={cn('mt-0.5 font-semibold truncate', openCount > 0 ? 'text-warning' : 'text-text')}>
-            {openCount} active
+          <dd className="mt-0.5 truncate">
+            {openCount > 0 ? (
+              <span className="inline-flex items-center font-semibold text-warning bg-warning/[0.1] px-1.5 py-0.5 rounded text-[11px] backdrop-blur-xs">
+                {openCount} active
+              </span>
+            ) : (
+              <span className="font-medium text-text-secondary text-xs">
+                0 active
+              </span>
+            )}
           </dd>
         </div>
       </dl>

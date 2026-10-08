@@ -122,10 +122,10 @@ export function CurrentDeviceSection({
         />
       ) : (
         <div className="space-y-6">
-          {/* Prominent Device Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border border-border bg-canvas px-4 py-3.5">
+          {/* Prominent Device Banner with Subtle Glass Gradient */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border border-primary/20 bg-gradient-to-r from-primary/[0.04] via-canvas/60 to-surface backdrop-blur-xs px-4 py-3.5">
             <div className="flex items-center gap-3.5">
-              <div className="flex size-10 items-center justify-center rounded-md bg-surface border border-border text-primary shrink-0">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/25 text-primary backdrop-blur-md shrink-0">
                 {getDeviceIcon(device!.device_type)}
               </div>
               <div className="min-w-0">
