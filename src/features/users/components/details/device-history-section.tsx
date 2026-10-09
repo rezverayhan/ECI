@@ -57,9 +57,14 @@ export function DeviceHistorySection({ deviceHistory }: DeviceHistorySectionProp
                           <Laptop className="size-3.5" aria-hidden />
                         </div>
                         <div className="min-w-0">
-                          <span className="font-medium text-text block truncate">
-                            {item.device.brand ? `${item.device.brand} ` : ''}{item.device.model}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-text block truncate">
+                              {item.device.brand ? `${item.device.brand} ` : ''}{item.device.model}
+                            </span>
+                            {item.device.status === 'retired' && (
+                              <StatusBadge status="retired" />
+                            )}
+                          </div>
                           <span className="capitalize text-xs text-text-secondary">
                             {item.device.device_type}
                           </span>

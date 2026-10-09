@@ -52,7 +52,9 @@ export const NAV_ENTRIES: NavEntry[] = [
   // Org-wide support queue is IT Admin / General Manager operational tooling;
   // General Users create/view their own issues from their own Employee 360 page.
   { label: 'IT Support', path: '/app/support', icon: LifeBuoy, allow: ['it_administrator', 'general_manager'] },
-  { label: 'Renewals', path: '/app/renewals', icon: RefreshCcw },
+  // user_licenses RLS grants org-wide visibility only to IT Administrator —
+  // other roles see only their own license (already shown in Employee 360).
+  { label: 'Renewals', path: '/app/renewals', icon: RefreshCcw, allow: ['it_administrator'] },
   { label: 'Notifications', path: '/app/notifications', icon: Bell },
   { label: 'Settings', path: '/app/settings/profile', icon: Settings },
 ]

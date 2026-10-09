@@ -1,12 +1,18 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { PlaceholderPage } from '@/components/shared/placeholder-page'
 import { LoginPage } from '@/features/auth/pages/login-page'
+import { ResetPasswordPage } from '@/features/auth/pages/reset-password-page'
+import { MeetingRoomsPage } from '@/features/bookings/pages/meeting-rooms-page'
+import { CarsPage } from '@/features/bookings/pages/cars-page'
 import { DashboardPage } from '@/features/dashboard/pages/dashboard-page'
+import { RenewalsPage } from '@/features/renewals/pages/renewals-page'
 import { IpPhoneDirectoryPage } from '@/features/ip-phone-directory/pages/ip-phone-directory-page'
 import { SupportQueuePage } from '@/features/support/pages/support-queue-page'
 import { SupportIssueDetailPage } from '@/features/support/pages/support-issue-detail-page'
+import { NotificationsPage } from '@/features/notifications/pages/notifications-page'
 import { ProfilePage } from '@/features/settings/pages/profile-page'
 import { PasswordPage } from '@/features/settings/pages/password-page'
+import { NotificationPreferencesPage } from '@/features/settings/pages/notification-preferences-page'
+import { SystemConfigurationPage } from '@/features/settings/pages/system-configuration-page'
 import { UserCreatePage } from '@/features/users/pages/user-create-page'
 import { UserDetailsPage } from '@/features/users/pages/user-details-page'
 import { UsersListPage } from '@/features/users/pages/users-list-page'
@@ -25,6 +31,11 @@ export const router = createBrowserRouter([
   {
     path: '/unauthorized',
     element: <UnauthorizedPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
+    errorElement: <RouteErrorBoundary />,
   },
   {
     element: <ProtectedRoute />,
@@ -69,12 +80,12 @@ export const router = createBrowserRouter([
           },
           {
             path: 'bookings/meeting-rooms',
-            element: <PlaceholderPage title="Meeting Rooms" description="Book and manage meeting room reservations." />,
+            element: <MeetingRoomsPage />,
             handle: { title: 'Meeting Rooms' },
           },
           {
             path: 'bookings/cars',
-            element: <PlaceholderPage title="Cars" description="Book and manage company car reservations." />,
+            element: <CarsPage />,
             handle: { title: 'Cars' },
           },
           {
@@ -101,13 +112,22 @@ export const router = createBrowserRouter([
             handle: { title: 'Support Issue' },
           },
           {
-            path: 'renewals',
-            element: <PlaceholderPage title="Renewals" description="Upcoming, due and expired account license renewals." />,
-            handle: { title: 'Renewals' },
+            // user_licenses RLS only grants org-wide SELECT to IT Administrator
+            // (everyone else only sees their own row) — gating the route matches
+            // that boundary instead of showing General Manager/Admin/General User
+            // a page that would render as empty or misleadingly incomplete.
+            element: <RequireAccessLevel allow={['it_administrator']} />,
+            children: [
+              {
+                path: 'renewals',
+                element: <RenewalsPage />,
+                handle: { title: 'Renewals' },
+              },
+            ],
           },
           {
             path: 'notifications',
-            element: <PlaceholderPage title="Notifications" />,
+            element: <NotificationsPage />,
             handle: { title: 'Notifications' },
           },
           {
@@ -122,7 +142,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'settings/notifications',
-            element: <PlaceholderPage title="Notification Preferences" />,
+            element: <NotificationPreferencesPage />,
             handle: { title: 'Notification Preferences' },
           },
           {
@@ -130,7 +150,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: 'settings/system',
-                element: <PlaceholderPage title="System Configuration" description="Approved operational settings." />,
+                element: <SystemConfigurationPage />,
                 handle: { title: 'System Configuration' },
               },
             ],

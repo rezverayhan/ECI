@@ -125,12 +125,12 @@ export function MachineNetworkSection({
             <InfoField label="Machine Name" value={machineName} mono />
             <InfoField
               label="Machine Status"
-              value={<StatusBadge status={machine?.status || 'active'} />}
+              value={machine ? <StatusBadge status={machine.status} /> : null}
             />
             <div className="col-span-2">
               <InfoField
                 label="Operating System"
-                value={machine?.operating_system || 'Enterprise Standard (Managed)'}
+                value={machine?.operating_system}
               />
             </div>
             {machine?.notes ? (
@@ -221,7 +221,7 @@ export function MachineNetworkSection({
             />
             <InfoField
               label="Addressing Mode"
-              value={currentNetwork ? 'Static Reserved' : 'Dynamic / DHCP'}
+              value={currentNetwork ? 'Static Reserved' : null}
             />
             {currentNetwork?.notes ? (
               <div className="col-span-2">

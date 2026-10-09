@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import {
   ShieldAlert,
   KeyRound,
@@ -17,8 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { useUpdateUser } from '../../hooks/users-mutations'
+import { useUpdateUser, useProvisionUserAccount } from '../../hooks/users-mutations'
 import { translateSupabaseError } from '@/lib/supabase/translate-error'
+import { supabase } from '@/lib/supabase/client'
 import type { UserDetail } from '../../api/users-api'
 
 interface ProfileSecuritySectionProps {
@@ -36,6 +38,20 @@ export function ProfileSecuritySection({
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const updateUser = useUpdateUser()
+  const provisionAccount = useProvisionUserAccount()
+  const hasLoginAccount = Boolean(user.auth_user_id)
+
+  const resetCredentials = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke<{ success?: boolean; error?: string }>(
+        'admin-reset-password',
+        { body: { employeeId: user.id } },
+      )
+      if (error) throw new Error('Unable to send the credential reset email. Please try again.')
+      if (!data?.success) throw new Error(data?.error ?? 'Unable to send the credential reset email.')
+      return data
+    },
+  })
 
   const isSuspended = user.employment_status === 'inactive' || !user.is_active
 
@@ -90,7 +106,7 @@ export function ProfileSecuritySection({
                 className="gap-1.5"
               >
                 <KeyRound className="size-3.5" aria-hidden />
-                Reset Credentials
+                {hasLoginAccount ? 'Reset Credentials' : 'Provision Login Account'}
               </Button>
 
               <Button
@@ -139,22 +155,88 @@ export function ProfileSecuritySection({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* No server-side credential-reset flow exists yet; this must stay an honest no-op, never a false success claim. */}
-      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+      <AlertDialog
+        open={resetDialogOpen}
+        onOpenChange={(next) => {
+          if (!next) {
+            resetCredentials.reset()
+            provisionAccount.reset()
+          }
+          setResetDialogOpen(next)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Credential Reset Not Yet Available</AlertDialogTitle>
+            <AlertDialogTitle>
+              {resetCredentials.isSuccess || provisionAccount.isSuccess
+                ? 'Email Sent'
+                : hasLoginAccount
+                  ? 'Send Credential Reset Email?'
+                  : 'Provision Login Account?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              No reset request has been sent. Administrative credential recovery for{' '}
-              <span className="font-semibold text-text">{user.official_email}</span> requires a
-              secure server-side flow that has not been implemented yet. No email, link, or token
-              has been generated.
+              {resetCredentials.isSuccess ? (
+                <>
+                  A secure, time-limited password reset link has been emailed to{' '}
+                  <span className="font-semibold text-text">{user.official_email}</span>. The employee
+                  must open that link to set a new password — no password or token is visible here.
+                </>
+              ) : provisionAccount.isSuccess ? (
+                <>
+                  A secure account-setup link has been emailed to{' '}
+                  <span className="font-semibold text-text">{user.official_email}</span>. The employee
+                  must open that link to set their password before they can sign in.
+                </>
+              ) : hasLoginAccount ? (
+                <>
+                  This sends a secure password reset link to{' '}
+                  <span className="font-semibold text-text">{user.official_email}</span>. Their current
+                  password stays unknown and unchanged until they complete the link.
+                </>
+              ) : (
+                <>
+                  This employee has no login account yet — they cannot sign in. This creates their
+                  account and emails a secure setup link to{' '}
+                  <span className="font-semibold text-text">{user.official_email}</span>. No password is
+                  ever set or visible here.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {(resetCredentials.isError || provisionAccount.isError) && (
+            <p className="text-xs text-error">
+              {((resetCredentials.error ?? provisionAccount.error) as Error).message}
+            </p>
+          )}
+
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setResetDialogOpen(false)}>
-              Understood
-            </AlertDialogAction>
+            {resetCredentials.isSuccess || provisionAccount.isSuccess ? (
+              <AlertDialogAction onClick={() => setResetDialogOpen(false)}>Done</AlertDialogAction>
+            ) : (
+              <>
+                <AlertDialogCancel disabled={resetCredentials.isPending || provisionAccount.isPending}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (hasLoginAccount) {
+                      resetCredentials.mutate()
+                    } else {
+                      provisionAccount.mutate(user.id)
+                    }
+                  }}
+                  disabled={resetCredentials.isPending || provisionAccount.isPending}
+                >
+                  {resetCredentials.isPending || provisionAccount.isPending
+                    ? 'Sending…'
+                    : hasLoginAccount
+                      ? 'Send Reset Email'
+                      : 'Provision Account'}
+                </AlertDialogAction>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

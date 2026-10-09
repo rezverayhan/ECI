@@ -58,7 +58,7 @@ export function ItSnapshotStrip({
             {machineName}
           </span>
           <span className="text-xs text-text-muted truncate">
-            {machine?.operating_system || 'Configured'}
+            {machine?.operating_system || '—'}
           </span>
         </div>
 
@@ -162,7 +162,7 @@ export function ItSnapshotStrip({
             {phoneExtension}
           </span>
           <span className="text-xs text-text-muted truncate">
-            {currentIpPhone?.ip_phone.department?.name || 'Voice Terminal'}
+            {currentIpPhone?.ip_phone.department?.name || '—'}
           </span>
         </div>
       </div>

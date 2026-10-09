@@ -1,0 +1,9 @@
+E:\AI Development website - Vibe Coding\ECI\docs\ECI_User_Management_PRD_v1.1 (1).md
+E:\AI Development website - Vibe Coding\ECI\docs\ECI_User_Management_Phase_2_App_Flow_v1.0.md
+E:\AI Development website - Vibe Coding\ECI\docs\ECI_User_Management_Phase_3_Tech_Stack_v1.0.md
+E:\AI Development website - Vibe Coding\ECI\docs\ECI_User_Management_Phase_4_Content_Guidelines_v1.0.md
+E:\AI Development website - Vibe Coding\ECI\docs\ECI_User_Management_Phase_5_Backend_Schema_v1.0.md
+E:\AI Development website - Vibe Coding\ECI\docs\ECI_User_Management_Phase_6_Implementation_Plan_v1.0.md
+E:\AI Development website - Vibe Coding\ECI\index.html
+E:\AI Development website - Vibe Coding\ECI\docs\Modern IT User Management Dashboard Mockup.png
+E:\AI Development website - Vibe Coding\ECI\public\icon.svg

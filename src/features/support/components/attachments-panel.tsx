@@ -4,18 +4,16 @@ import { Button } from '@/components/ui/button'
 import { useSupportIssueAttachments } from '../hooks/support-queries'
 import { useDeleteAttachment, useUploadAttachment } from '../hooks/support-mutations'
 import { getAttachmentSignedUrl } from '../api/support-api'
+import {
+  ALLOWED_ATTACHMENT_EXTENSIONS,
+  formatFileSize,
+  validateAttachmentFile,
+} from '../lib/support-attachments'
 
 interface AttachmentsPanelProps {
   issueId: string
   isItAdmin: boolean
   canUpload: boolean
-}
-
-function formatFileSize(bytes: number | null): string {
-  if (bytes == null) return ''
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export function AttachmentsPanel({ issueId, isItAdmin, canUpload }: AttachmentsPanelProps) {
@@ -30,6 +28,14 @@ export function AttachmentsPanel({ issueId, isItAdmin, canUpload }: AttachmentsP
     const file = e.target.files?.[0]
     if (!file) return
     setError(null)
+
+    const validation = validateAttachmentFile(file)
+    if (!validation.valid && validation.error) {
+      setError(validation.error)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     try {
       await upload.mutateAsync(file)
     } catch {
@@ -112,7 +118,13 @@ export function AttachmentsPanel({ issueId, isItAdmin, canUpload }: AttachmentsP
 
       {canUpload && (
         <div>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ALLOWED_ATTACHMENT_EXTENSIONS.join(',')}
+            className="hidden"
+            onChange={handleFileSelected}
+          />
           <Button
             type="button"
             size="sm"

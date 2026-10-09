@@ -427,7 +427,7 @@ export async function closeIssue(issueId: string, actorUserId: string): Promise<
   return { issue, update }
 }
 
-export async function assignIssue(issueId: string, actorUserId: string, assignedTo: string): Promise<TransitionResult> {
+export async function assignIssue(issueId: string, actorUserId: string, assignedTo: string | null): Promise<TransitionResult> {
   const current = await readIssueOrThrow(issueId)
   if (current.status === 'closed') {
     throw new Error('This issue is closed and cannot be reassigned.')
@@ -446,16 +446,19 @@ export async function assignIssue(issueId: string, actorUserId: string, assigned
     issueId,
     actorUserId,
     updateType: 'assignment',
+    comment: assignedTo ? null : 'Assignment cleared',
     isInternal: true,
   })
 
-  await notifyRecipient({
-    recipientUserId: assignedTo,
-    notificationType: 'SUPPORT_ISSUE_ASSIGNED',
-    title: `Issue ${issue.issue_number} assigned to you`,
-    message: `"${issue.title}" has been assigned to you.`,
-    relatedIssueId: issueId,
-  })
+  if (assignedTo) {
+    await notifyRecipient({
+      recipientUserId: assignedTo,
+      notificationType: 'SUPPORT_ISSUE_ASSIGNED',
+      title: `Issue ${issue.issue_number} assigned to you`,
+      message: `"${issue.title}" has been assigned to you.`,
+      relatedIssueId: issueId,
+    })
+  }
 
   return { issue, update }
 }

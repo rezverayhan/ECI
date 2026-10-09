@@ -203,7 +203,12 @@ export function SupportQueuePage() {
           </SelectContent>
         </Select>
         <div className="w-full sm:w-56">
-          <ManagerCombobox value={requesterId} onChange={setRequesterId} />
+          <ManagerCombobox
+            value={requesterId}
+            onChange={setRequesterId}
+            emptyLabel="All requesters"
+            ariaLabel="Filter by requester"
+          />
         </div>
       </div>
 
@@ -218,52 +223,87 @@ export function SupportQueuePage() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-surface">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Issue</TableHead>
-                <TableHead>Requester</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Submitted</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {issues.map((issue) => (
-                <TableRow
-                  key={issue.id}
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/app/support/${issue.id}`)}
-                >
-                  <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">
-                    {issue.issue_number}
-                  </TableCell>
-                  <TableCell className="text-xs text-text-secondary whitespace-nowrap">
-                    {issue.requester?.full_name ?? '—'}
-                  </TableCell>
-                  <TableCell className="max-w-[280px]">
-                    <span className="font-medium text-text block truncate">{issue.title}</span>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <StatusBadge status={issue.priority} />
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <StatusBadge status={issue.status} />
-                  </TableCell>
-                  <TableCell className="text-xs text-text-secondary whitespace-nowrap">
-                    {issue.assignee?.full_name ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-xs text-text-secondary whitespace-nowrap">
-                    {formatDateTime(issue.submitted_at)}
-                  </TableCell>
+        <>
+          {/* Desktop table — 7 columns, squeezed unreadably below md, so mobile gets a card list instead (same split pattern as Bookings/Users). */}
+          <div className="hidden md:block overflow-hidden rounded-lg border border-border bg-surface">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Issue</TableHead>
+                  <TableHead>Requester</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Submitted</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {issues.map((issue) => (
+                  <TableRow
+                    key={issue.id}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`View support issue ${issue.issue_number}: ${issue.title}`}
+                    className="cursor-pointer focus-visible:outline-none focus-visible:bg-canvas/70 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-canvas/50 transition-colors"
+                    onClick={() => navigate(`/app/support/${issue.id}`, { state: { from: '/app/support', fromLabel: 'IT Support' } })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        navigate(`/app/support/${issue.id}`, { state: { from: '/app/support', fromLabel: 'IT Support' } })
+                      }
+                    }}
+                  >
+                    <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">
+                      {issue.issue_number}
+                    </TableCell>
+                    <TableCell className="text-xs text-text-secondary whitespace-nowrap">
+                      {issue.requester?.full_name ?? '—'}
+                    </TableCell>
+                    <TableCell className="max-w-[280px]">
+                      <span className="font-medium text-text block truncate">{issue.title}</span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <StatusBadge status={issue.priority} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <StatusBadge status={issue.status} />
+                    </TableCell>
+                    <TableCell className="text-xs text-text-secondary whitespace-nowrap">
+                      {issue.assignee?.full_name ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-xs text-text-secondary whitespace-nowrap">
+                      {formatDateTime(issue.submitted_at)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {issues.map((issue) => (
+              <button
+                key={issue.id}
+                type="button"
+                onClick={() => navigate(`/app/support/${issue.id}`, { state: { from: '/app/support', fromLabel: 'IT Support' } })}
+                className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-canvas"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold text-primary">{issue.issue_number}</span>
+                  <StatusBadge status={issue.status} />
+                </div>
+                <span className="text-sm font-medium text-text truncate">{issue.title}</span>
+                <div className="flex items-center justify-between text-xs text-text-secondary">
+                  <span>{issue.requester?.full_name ?? '—'}</span>
+                  <StatusBadge status={issue.priority} />
+                </div>
+                <span className="text-xs text-text-muted">{formatDateTime(issue.submitted_at)}</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       <CreateIssueQueueDialog open={createOpen} onOpenChange={setCreateOpen} />

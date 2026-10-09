@@ -2,9 +2,11 @@ import { motion } from 'motion/react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/layout/sidebar'
 import { TopBar } from '@/components/layout/top-bar'
+import { useNotificationsRealtime } from '@/features/notifications/hooks/use-notifications-realtime'
 
 export function AppShell() {
   const location = useLocation()
+  useNotificationsRealtime()
 
   return (
     <div className="flex min-h-svh bg-canvas">

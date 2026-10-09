@@ -90,7 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         await supabase.auth.signOut()
-        queryClient.removeQueries({ queryKey: ['app-user'] })
+        // Clear the entire cache, not just app-user: this is a shared admin
+        // console where a different account can sign in next in the same
+        // tab, and every other query (users list, dashboard, support, etc.)
+        // is RLS-scoped to whoever was signed in — leaving it cached would
+        // let a prior session's data flash for the next one.
+        queryClient.clear()
       },
       retryAppUser() {
         appUserQuery.refetch()

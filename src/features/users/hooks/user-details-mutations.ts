@@ -14,6 +14,7 @@ import {
   createDeviceServiceRecord,
   createIpPhone,
   createPrinter,
+  deactivateApplication,
   createSupportIssueForUser,
   createUserLicense,
   flagIpPhoneConflict,
@@ -27,6 +28,8 @@ import {
   replaceDevice,
   replacePrinter,
   reserveIpAddress,
+  retireDevice,
+  retirePrinter,
   returnDevice,
   returnPrinter,
   saveMachineProfile,
@@ -54,6 +57,8 @@ import {
   type ReplaceDeviceInput,
   type ReplacePrinterInput,
   type ReserveIpInput,
+  type RetireDeviceInput,
+  type RetirePrinterInput,
   type ReturnDeviceInput,
   type ReturnPrinterInput,
   type SaveMachineProfileInput,
@@ -64,20 +69,25 @@ import type { UserApplicationData, UserLicenseWithRenewals } from '../api/user-d
 
 export function useCreateSupportIssue(userId: string) {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (input: Omit<CreateSupportIssueInput, 'userId'>) =>
       createSupportIssueForUser({ ...input, userId }),
     onSuccess: async (created) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_CREATED',
           entityType: 'support_issues',
           entityId: created.id,
           newValues: created as unknown as Record<string, Json>,
-          metadata: { user_id: userId, issue_number: created.issue_number },
+          metadata: {
+            issue_number: created.issue_number,
+            requester_id: userId,
+            creator_id: appUser.id,
+          },
         })
       }
       queryClient.invalidateQueries({ queryKey: ['users', 'support-issues', userId] })
@@ -138,19 +148,39 @@ export function useAssignDevice(userId: string) {
 
 export function useReturnDevice(userId: string) {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (input: Omit<ReturnDeviceInput, 'returnedByUserId'>) =>
       returnDevice({ ...input, returnedByUserId: appUser?.id ?? '' }),
     onSuccess: async (_data, variables) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
+        if (variables.retireDevice) {
+          await logAuditEvent({
+            actorUserId: appUser.id,
+            action: 'DEVICE_RETIRED',
+            entityType: 'devices',
+            entityId: variables.deviceId,
+            newValues: { status: 'retired' },
+            metadata: {
+              user_id: userId,
+              assignment_id: variables.assignmentId,
+              reason: variables.replacementReason ?? null,
+              workflow: 'return_and_retire',
+            },
+          })
+        }
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'DEVICE_RETURNED',
           entityType: 'device_assignments',
           entityId: variables.assignmentId,
-          newValues: { device_id: variables.deviceId, replacement_reason: variables.replacementReason ?? null },
+          newValues: {
+            device_id: variables.deviceId,
+            replacement_reason: variables.replacementReason ?? null,
+            post_return_status: variables.retireDevice ? 'retired' : 'available',
+          },
           metadata: { user_id: userId },
         })
       }
@@ -158,6 +188,42 @@ export function useReturnDevice(userId: string) {
       queryClient.invalidateQueries({ queryKey: ['users', 'device-history', userId] })
       queryClient.invalidateQueries({ queryKey: ['catalog', 'available-devices'] })
       queryClient.invalidateQueries({ queryKey: ['users', 'audit-logs', userId] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'service-history', variables.deviceId] })
+    },
+  })
+}
+
+export function useRetireDevice(userId?: string) {
+  const queryClient = useQueryClient()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
+
+  return useMutation({
+    mutationFn: (input: Omit<RetireDeviceInput, 'retiredByUserId'>) =>
+      retireDevice({ ...input, retiredByUserId: appUser?.id ?? '' }),
+    onSuccess: async (retired, variables) => {
+      if (appUser && isItAdmin) {
+        await logAuditEvent({
+          actorUserId: appUser.id,
+          action: 'DEVICE_RETIRED',
+          entityType: 'devices',
+          entityId: retired.id,
+          newValues: { status: 'retired' },
+          metadata: {
+            asset_id: retired.asset_id,
+            user_id: userId ?? null,
+            reason: variables.retirementReason ?? null,
+            workflow: 'direct_retire',
+          },
+        })
+      }
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: ['users', 'current-device', userId] })
+        queryClient.invalidateQueries({ queryKey: ['users', 'device-history', userId] })
+        queryClient.invalidateQueries({ queryKey: ['users', 'audit-logs', userId] })
+      }
+      queryClient.invalidateQueries({ queryKey: ['catalog', 'available-devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'service-history', retired.id] })
     },
   })
 }
@@ -446,6 +512,32 @@ export function useReplacePrinter(userId: string) {
   })
 }
 
+export function useRetirePrinter(userId: string) {
+  const queryClient = useQueryClient()
+  const { appUser } = useAuth()
+
+  return useMutation({
+    mutationFn: (input: Omit<RetirePrinterInput, 'retiredByUserId'>) =>
+      retirePrinter({ ...input, retiredByUserId: appUser?.id ?? '' }),
+    onSuccess: async (retired) => {
+      if (appUser) {
+        await logAuditEvent({
+          actorUserId: appUser.id,
+          action: 'PRINTER_RETIRED',
+          entityType: 'printers',
+          entityId: retired.id,
+          newValues: retired as unknown as Record<string, Json>,
+          metadata: { user_id: userId, printer_id: retired.id },
+        })
+      }
+      queryClient.invalidateQueries({ queryKey: ['users', 'current-printer', userId] })
+      queryClient.invalidateQueries({ queryKey: ['users', 'printer-history', userId] })
+      queryClient.invalidateQueries({ queryKey: ['catalog', 'available-printers'] })
+      queryClient.invalidateQueries({ queryKey: ['users', 'audit-logs', userId] })
+    },
+  })
+}
+
 export function useCreatePrinter() {
   const queryClient = useQueryClient()
   const { appUser } = useAuth()
@@ -532,6 +624,28 @@ export function useCreateApplication() {
           entityId: created.id,
           newValues: created as unknown as Record<string, Json>,
           metadata: { name: created.name },
+        })
+      }
+      queryClient.invalidateQueries({ queryKey: ['catalog', 'all-applications'] })
+    },
+  })
+}
+
+export function useDeactivateApplication() {
+  const queryClient = useQueryClient()
+  const { appUser } = useAuth()
+
+  return useMutation({
+    mutationFn: (applicationId: string) => deactivateApplication(applicationId),
+    onSuccess: async (updated) => {
+      if (appUser) {
+        await logAuditEvent({
+          actorUserId: appUser.id,
+          action: 'APPLICATION_DEACTIVATED',
+          entityType: 'applications',
+          entityId: updated.id,
+          newValues: updated as unknown as Record<string, Json>,
+          metadata: { name: updated.name },
         })
       }
       queryClient.invalidateQueries({ queryKey: ['catalog', 'all-applications'] })

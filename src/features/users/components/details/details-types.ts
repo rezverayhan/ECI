@@ -78,6 +78,25 @@ export const DEVICE_REPLACEMENT_REASONS = [
   'Role Change / Dept Transfer',
   'Employee Departure / Resignation',
   'Temporary Loan Return',
+  'Asset Decommissioned / Retired',
+  'Other Operational Reason',
+] as const
+
+export const DEVICE_RETIREMENT_REASONS = [
+  'End of Lifecycle / Obsolete',
+  'Beyond Economical Repair',
+  'Physical Damage / Hardware Failure',
+  'Lost or Stolen Asset',
+  'Decommissioned / Asset Surplus',
+  'Other Operational Reason',
+] as const
+
+export const PRINTER_RETIREMENT_REASONS = [
+  'End of Lifecycle / Obsolete',
+  'Beyond Economical Repair',
+  'Physical Damage / Hardware Failure',
+  'Lost or Stolen Asset',
+  'Decommissioned / Asset Surplus',
   'Other Operational Reason',
 ] as const
 

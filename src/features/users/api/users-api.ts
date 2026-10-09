@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import type {
   SearchedUser,
@@ -96,6 +97,41 @@ export async function getDesignations() {
 export async function createUser(input: UserInsert): Promise<UserRow> {
   const { data, error } = await supabase.from('users').insert(input).select('*').single()
   if (error) throw error
+  return data
+}
+
+export interface ProvisionAccountResult {
+  success: boolean
+  alreadyLinked?: boolean
+}
+
+/** Creates (or reuses) the Supabase Auth account for an employee whose public.users
+ *  row has no auth_user_id yet, and emails them a secure account-setup link. See
+ *  the admin-provision-user-account edge function for the full authorization and
+ *  linking logic — this never touches auth.users directly from the client. */
+export async function provisionUserAccount(employeeId: string): Promise<ProvisionAccountResult> {
+  const { data, error } = await supabase.functions.invoke<ProvisionAccountResult & { error?: string }>(
+    'admin-provision-user-account',
+    { body: { employeeId } },
+  )
+  if (error) {
+    // supabase-js collapses every non-2xx response into `error` (a FunctionsHttpError)
+    // and leaves `data` null — the function's own {error: "..."} JSON body, which always
+    // explains exactly what went wrong (unauthorized, already-provisioned, Auth Admin API
+    // failure, etc.), was previously discarded here in favor of one generic message no
+    // matter the real cause. Unwrap the underlying Response and surface its actual reason.
+    let message = 'Unable to provision the login account. Please try again.'
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const body = await error.context.json()
+        if (typeof body?.error === 'string') message = body.error
+      } catch {
+        // Non-JSON error response (e.g. a gateway failure) — keep the generic message.
+      }
+    }
+    throw new Error(message)
+  }
+  if (!data?.success) throw new Error(data?.error ?? 'Unable to provision the login account.')
   return data
 }
 

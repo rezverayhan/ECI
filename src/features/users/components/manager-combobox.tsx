@@ -17,30 +17,48 @@ interface ManagerComboboxProps {
   value: string | undefined
   onChange: (userId: string | undefined) => void
   excludeUserId?: string
+  placeholder?: string
+  emptyLabel?: string
+  selectedFallbackLabel?: string
+  ariaLabel?: string
+  disabled?: boolean
+  selectedName?: string
 }
 
 // Searchable, not a full-table dropdown (Stage 6 §25) — queries search_users
 // on demand instead of loading every employee into the browser.
-export function ManagerCombobox({ value, onChange, excludeUserId }: ManagerComboboxProps) {
+export function ManagerCombobox({
+  value,
+  onChange,
+  excludeUserId,
+  placeholder = 'Search employees…',
+  emptyLabel = 'No manager',
+  selectedFallbackLabel = 'Selected employee',
+  ariaLabel = 'Select manager',
+  disabled = false,
+  selectedName,
+}: ManagerComboboxProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const candidatesQuery = useManagerCandidates(query, excludeUserId)
 
   const selected = candidatesQuery.data?.find((u) => u.id === value)
+  const displayLabel = selected?.full_name ?? (value ? (selectedName ?? selectedFallbackLabel) : emptyLabel)
 
   return (
     <div className="flex items-center gap-1.5">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
         <PopoverTrigger
           render={
             <Button
               type="button"
               variant="outline"
               className="w-full justify-between font-normal"
-              aria-label="Select manager"
+              aria-label={ariaLabel}
+              disabled={disabled}
             >
-              <span className={cn(!selected && !value && 'text-text-muted')}>
-                {selected?.full_name ?? (value ? 'Selected manager' : 'No manager')}
+              <span className={cn(!selected && !selectedName && !value && 'text-text-muted')}>
+                {displayLabel}
               </span>
               <ChevronsUpDown className="size-4 text-text-muted" aria-hidden />
             </Button>
@@ -49,7 +67,7 @@ export function ManagerCombobox({ value, onChange, excludeUserId }: ManagerCombo
         <PopoverContent className="w-72 p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search employees…"
+              placeholder={placeholder}
               value={query}
               onValueChange={setQuery}
             />
@@ -88,12 +106,12 @@ export function ManagerCombobox({ value, onChange, excludeUserId }: ManagerCombo
           </Command>
         </PopoverContent>
       </Popover>
-      {value ? (
+      {value && !disabled ? (
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
-          aria-label="Clear manager"
+          aria-label={`Clear ${ariaLabel.toLowerCase()}`}
           onClick={() => onChange(undefined)}
         >
           <X className="size-3.5" aria-hidden />

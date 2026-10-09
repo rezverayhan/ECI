@@ -1,7 +1,10 @@
 import { PageHeader } from '@/components/shared/page-header'
-import { EmptyState } from '@/components/shared/empty-state'
 import { useAuth } from '@/features/auth/context/auth-context'
 import type { AccessLevel } from '@/features/auth/types'
+import { ItAdminOverview } from '../components/it-admin-overview'
+import { GeneralManagerOverview } from '../components/general-manager-overview'
+import { AdminOverview } from '../components/admin-overview'
+import { GeneralUserOverview } from '../components/general-user-overview'
 
 // Role-aware dashboard identity (App Flow §1.1). The real operational
 // summary for each role is built in a later stage — this establishes the
@@ -32,7 +35,10 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={copy.title} description={copy.description} />
-      <EmptyState title="Your dashboard is being prepared" description="Operational data will appear here once this area is built." />
+      {accessLevel === 'it_administrator' && <ItAdminOverview />}
+      {accessLevel === 'general_manager' && <GeneralManagerOverview />}
+      {accessLevel === 'admin' && <AdminOverview />}
+      {(accessLevel === 'general_user' || !accessLevel) && <GeneralUserOverview />}
     </div>
   )
 }

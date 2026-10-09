@@ -7,6 +7,17 @@ import { ErrorState } from '@/components/shared/error-state'
 import { EmptyState } from '@/components/shared/empty-state'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from '@/components/ui/alert-dialog'
 import {
   Select,
   SelectContent,
@@ -24,6 +35,8 @@ import {
 } from '@/components/ui/table'
 import { useAuth } from '@/features/auth/context/auth-context'
 import { getIpPhoneDirectory } from '@/features/users/api/user-details-api'
+import { useIpPhoneConflictActions } from '@/features/users/hooks/user-details-mutations'
+import { FlagIpPhoneConflictDialog } from '@/features/users/components/details/dialogs/flag-ip-phone-conflict-dialog'
 
 const STATUS_FILTERS = ['all', 'assigned', 'unassigned'] as const
 
@@ -39,6 +52,9 @@ export function IpPhoneDirectoryPage() {
 
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<typeof STATUS_FILTERS[number]>('all')
+  const [flagTarget, setFlagTarget] = useState<{ id: string; extension: string } | null>(null)
+  const [clearTarget, setClearTarget] = useState<{ id: string; extension: string } | null>(null)
+  const { clear } = useIpPhoneConflictActions()
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -107,48 +123,149 @@ export function IpPhoneDirectoryPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={Search} title="No extensions match this search/filter." />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-surface">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Extension</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                {isItAdmin && <TableHead>Review</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-mono font-medium text-text">Ext {row.extension}</TableCell>
-                  <TableCell className="text-text-secondary">{row.assigned_user_name ?? '—'}</TableCell>
-                  <TableCell className="text-text-secondary">{row.assigned_employee_id ?? '—'}</TableCell>
-                  <TableCell className="text-text-secondary">
-                    {row.assigned_department ?? row.department_name ?? '—'}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge
-                      status={row.assigned_user_name ? 'assigned' : row.status}
-                      labelOverride={row.assigned_user_name ? 'Assigned' : row.status === 'active' ? 'Unassigned' : 'Inactive'}
-                    />
-                  </TableCell>
-                  {isItAdmin && (
-                    <TableCell>
-                      {row.has_conflict ? (
-                        <span className="text-xs font-medium text-error">Extension conflict requires IT review.</span>
-                      ) : (
-                        <span className="text-xs text-text-muted">—</span>
-                      )}
-                    </TableCell>
-                  )}
+        <>
+          <div className="hidden md:block overflow-hidden rounded-lg border border-border bg-surface">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Extension</TableHead>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Employee ID</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Status</TableHead>
+                  {isItAdmin && <TableHead>Review</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-mono font-medium text-text">Ext {row.extension}</TableCell>
+                    <TableCell className="text-text-secondary">{row.assigned_user_name ?? '—'}</TableCell>
+                    <TableCell className="text-text-secondary">{row.assigned_employee_id ?? '—'}</TableCell>
+                    <TableCell className="text-text-secondary">
+                      {row.assigned_department ?? row.department_name ?? '—'}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge
+                        status={row.assigned_user_name ? 'assigned' : row.status}
+                        labelOverride={row.assigned_user_name ? 'Assigned' : row.status === 'active' ? 'Unassigned' : 'Inactive'}
+                      />
+                    </TableCell>
+                    {isItAdmin && (
+                      <TableCell>
+                        {row.has_conflict ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-error">Conflict — review needed.</span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => setClearTarget({ id: row.id, extension: row.extension })}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-text-muted"
+                            onClick={() => setFlagTarget({ id: row.id, extension: row.extension })}
+                          >
+                            Flag Conflict
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {filtered.map((row) => (
+              <div key={row.id} className="rounded-lg border border-border bg-surface p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-mono font-medium text-text">Ext {row.extension}</span>
+                  <StatusBadge
+                    status={row.assigned_user_name ? 'assigned' : row.status}
+                    labelOverride={row.assigned_user_name ? 'Assigned' : row.status === 'active' ? 'Unassigned' : 'Inactive'}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {row.assigned_user_name ?? '—'}
+                  {row.assigned_employee_id ? ` (${row.assigned_employee_id})` : ''}
+                </p>
+                <p className="text-xs text-text-secondary">{row.assigned_department ?? row.department_name ?? '—'}</p>
+                {isItAdmin && row.has_conflict && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="text-xs font-medium text-error">Conflict — review needed.</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setClearTarget({ id: row.id, extension: row.extension })}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
+                {isItAdmin && !row.has_conflict && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-7 px-2 text-xs text-text-muted"
+                    onClick={() => setFlagTarget({ id: row.id, extension: row.extension })}
+                  >
+                    Flag Conflict
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
+
+      {flagTarget && (
+        <FlagIpPhoneConflictDialog
+          open={Boolean(flagTarget)}
+          onOpenChange={(next) => !next && setFlagTarget(null)}
+          ipPhoneId={flagTarget.id}
+          extensionLabel={flagTarget.extension}
+        />
+      )}
+
+      <AlertDialog open={Boolean(clearTarget)} onOpenChange={(next) => !next && setClearTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Extension Conflict?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This clears the conflict marker on{' '}
+              <span className="font-semibold text-text">Ext {clearTarget?.extension}</span>. It does not
+              assign anyone — IT must make an explicit assignment decision separately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clear.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clear.isPending}
+              onClick={async () => {
+                if (!clearTarget) return
+                await clear.mutateAsync(clearTarget.id)
+                setClearTarget(null)
+              }}
+            >
+              {clear.isPending ? 'Clearing…' : 'Clear Conflict'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

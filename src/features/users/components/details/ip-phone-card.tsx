@@ -5,9 +5,10 @@ import type { UserCurrentIpPhoneData } from '../../api/user-details-api'
 
 interface IpPhoneCardProps {
   currentIpPhone: UserCurrentIpPhoneData | null | undefined
+  isItAdmin: boolean
 }
 
-export function IpPhoneCard({ currentIpPhone }: IpPhoneCardProps) {
+export function IpPhoneCard({ currentIpPhone, isItAdmin }: IpPhoneCardProps) {
   const hasPhone = Boolean(currentIpPhone)
   const phone = currentIpPhone?.ip_phone
 
@@ -39,12 +40,20 @@ export function IpPhoneCard({ currentIpPhone }: IpPhoneCardProps) {
           <dl className="space-y-1.5 pt-1 text-xs">
             <div className="flex justify-between text-text-secondary">
               <dt>Department Routing</dt>
-              <dd className="font-medium text-text">{phone!.department?.name || 'General Corporate'}</dd>
+              <dd className="font-medium text-text">{phone!.department?.name || '—'}</dd>
             </div>
             <div className="flex justify-between text-text-secondary">
               <dt>Hardware Terminal</dt>
-              <dd className="font-medium text-text">{phone!.phone_type || 'VoIP Desktop Phone'}</dd>
+              <dd className="font-medium text-text">{phone!.phone_type || '—'}</dd>
             </div>
+            {isItAdmin && (
+              <div className="flex justify-between text-text-secondary">
+                <dt>Phone IP Address</dt>
+                <dd className="font-medium text-text font-mono">
+                  {phone!.ip_phone_network_info?.ip_address != null ? String(phone!.ip_phone_network_info.ip_address) : '—'}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
       )}

@@ -321,7 +321,7 @@ export function UserDetailsPage() {
             supportIssues={supportIssues}
           />
 
-          <IpPhoneCard currentIpPhone={currentIpPhone} />
+          <IpPhoneCard currentIpPhone={currentIpPhone} isItAdmin={isItAdmin} />
 
           <RecentActivityCard auditLogs={auditLogs} />
         </div>

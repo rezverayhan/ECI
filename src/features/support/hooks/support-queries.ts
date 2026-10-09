@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-  getAttachmentSignedUrl,
   getItAdministrators,
   getSupportIssueAttachments,
   getSupportIssueDetail,
@@ -49,14 +48,5 @@ export function useItAdministrators() {
     queryKey: ['support', 'it-administrators'],
     queryFn: getItAdministrators,
     staleTime: 60_000,
-  })
-}
-
-export function useAttachmentSignedUrl(storagePath: string | null) {
-  return useQuery({
-    queryKey: ['support', 'attachment-url', storagePath],
-    queryFn: () => getAttachmentSignedUrl(storagePath!),
-    enabled: Boolean(storagePath),
-    staleTime: 0,
   })
 }

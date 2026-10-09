@@ -82,6 +82,9 @@ export interface UserCurrentIpPhoneData {
     phone_type: string | null
     status: string
     notes: string | null
+    /** Null for a General User — ip_phone_network_info's RLS only returns a row to an
+     *  IT Administrator, so this naturally comes back empty rather than leaking the IP. */
+    ip_phone_network_info: { ip_address: unknown } | null
     department?: { name: string } | null
   }
 }
@@ -287,6 +290,7 @@ export async function getUserCurrentIpPhone(userId: string): Promise<UserCurrent
         phone_type,
         status,
         notes,
+        ip_phone_network_info(ip_address),
         department:departments(name)
       )
     `)
@@ -296,7 +300,19 @@ export async function getUserCurrentIpPhone(userId: string): Promise<UserCurrent
 
   if (error) throw error
   if (!data || !data.ip_phone) return null
-  return data as unknown as UserCurrentIpPhoneData
+  // PostgREST embeds a to-one relation (PK = FK) as an object for an admin caller,
+  // or as an empty array/null when ip_phone_network_info's RLS excludes the row —
+  // normalize both shapes so callers only ever see `ip_phone_network_info | null`.
+  const raw = data as unknown as {
+    ip_phone: { ip_phone_network_info: { ip_address: unknown } | { ip_address: unknown }[] | null }
+  } & Omit<UserCurrentIpPhoneData, 'ip_phone'>
+  const networkInfo = Array.isArray(raw.ip_phone.ip_phone_network_info)
+    ? raw.ip_phone.ip_phone_network_info[0] ?? null
+    : raw.ip_phone.ip_phone_network_info
+  return {
+    ...raw,
+    ip_phone: { ...raw.ip_phone, ip_phone_network_info: networkInfo },
+  } as UserCurrentIpPhoneData
 }
 
 export async function getUserCurrentPrinter(userId: string): Promise<UserCurrentPrinterData | null> {
@@ -767,6 +783,7 @@ export interface ReturnDeviceInput {
   returnedByUserId: string
   replacementReason?: string | null
   notes?: string | null
+  retireDevice?: boolean
 }
 
 export async function returnDevice(input: ReturnDeviceInput) {
@@ -783,12 +800,71 @@ export async function returnDevice(input: ReturnDeviceInput) {
     .eq('id', input.assignmentId)
   if (assignError) throw assignError
 
-  // 2. Update device status to available
+  // 2. Update device status to retired (if return-and-retire) or available
+  const newStatus = input.retireDevice ? 'retired' : 'available'
   const { error: deviceError } = await supabase
     .from('devices')
-    .update({ status: 'available' })
+    .update({ status: newStatus })
     .eq('id', input.deviceId)
   if (deviceError) throw deviceError
+}
+
+export interface RetireDeviceInput {
+  deviceId: string
+  retiredByUserId: string
+  retirementReason?: string | null
+  notes?: string | null
+}
+
+export async function retireDevice(input: RetireDeviceInput): Promise<DeviceRow> {
+  // 1. Prevent retirement if the device is currently held in an active assignment
+  const { data: activeAssignment, error: checkError } = await supabase
+    .from('device_assignments')
+    .select('id, user_id')
+    .eq('device_id', input.deviceId)
+    .eq('assignment_status', 'active')
+    .maybeSingle()
+
+  if (checkError) throw checkError
+  if (activeAssignment) {
+    throw new Error(
+      'Cannot retire a device with an active employee assignment. Please return the device first or use the return-and-retire workflow.',
+    )
+  }
+
+  // 2. Fetch existing device to append notes cleanly
+  const { data: existingDevice, error: fetchError } = await supabase
+    .from('devices')
+    .select('notes')
+    .eq('id', input.deviceId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  let updatedNotes = existingDevice.notes
+  if (input.retirementReason || input.notes) {
+    const reasonParts = [
+      input.retirementReason ? `Reason: ${input.retirementReason}` : null,
+      input.notes ? `Notes: ${input.notes}` : null,
+    ].filter(Boolean).join(' | ')
+    const retireEntry = `[Retired ${new Date().toISOString().split('T')[0]}]: ${reasonParts}`
+    updatedNotes = updatedNotes ? `${updatedNotes}\n${retireEntry}` : retireEntry
+  }
+
+  // 3. Atomically update status to 'retired'
+  const { data, error: updateError } = await supabase
+    .from('devices')
+    .update({
+      status: 'retired',
+      notes: updatedNotes,
+    })
+    .eq('id', input.deviceId)
+    .neq('status', 'retired')
+    .select('*')
+    .single()
+
+  if (updateError) throw updateError
+  return data
 }
 
 export interface AssignIpInput {
@@ -1261,6 +1337,45 @@ export async function returnPrinter(input: ReturnPrinterInput) {
   if (printerError) throw printerError
 }
 
+export interface RetirePrinterInput {
+  assignmentId: string
+  printerId: string
+  retiredByUserId: string
+  reason: string
+  notes?: string | null
+}
+
+/** Ends any active assignment and permanently moves the printer out of operational availability.
+ *  Unlike returnPrinter, the asset status lands on 'retired' (not 'available') so it can never be
+ *  re-claimed through assignPrinter's status='available' guard. Assignment history is preserved. */
+export async function retirePrinter(input: RetirePrinterInput) {
+  const { data: closedAssignment, error: assignError } = await supabase
+    .from('printer_assignments')
+    .update({
+      assignment_status: 'ended',
+      returned_at: new Date().toISOString(),
+      returned_by: input.retiredByUserId,
+      notes: `[RETIRED: ${input.reason}] ${input.notes ?? ''}`.trim(),
+    })
+    .eq('id', input.assignmentId)
+    .eq('assignment_status', 'active')
+    .select('id')
+    .maybeSingle()
+  if (assignError) throw assignError
+  if (!closedAssignment) {
+    throw new Error('This printer assignment is no longer active. Refresh and try again.')
+  }
+
+  const { data, error: printerError } = await supabase
+    .from('printers')
+    .update({ status: 'retired', notes: `[RETIRED: ${input.reason}] ${input.notes ?? ''}`.trim() })
+    .eq('id', input.printerId)
+    .select('*')
+    .single()
+  if (printerError) throw printerError
+  return data
+}
+
 export interface AssignApplicationInput {
   userId: string
   applicationId: string
@@ -1342,6 +1457,22 @@ export async function createApplication(input: CreateApplicationInput): Promise<
       description: input.description?.trim() || null,
       is_active: true,
     })
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/** Soft-removes a catalog entry (is_active=false) so it drops out of getAllApplications'
+ *  active-only list for future assignments, without breaking existing user_applications
+ *  foreign keys or history. The schema already anticipates this (is_active exists and is
+ *  filtered on); this was simply never wired to a write path. */
+export async function deactivateApplication(applicationId: string): Promise<ApplicationRow> {
+  const { data, error } = await supabase
+    .from('applications')
+    .update({ is_active: false })
+    .eq('id', applicationId)
     .select('*')
     .single()
 
@@ -1613,21 +1744,21 @@ export interface CreateIpPhoneInput {
   extension: string
   phoneType?: string | null
   departmentId?: string | null
+  ipAddress?: string | null
   notes?: string | null
 }
 
+/** Creates the phone and (if given) its network-info row atomically via a SECURITY
+ *  DEFINER RPC — a plain two-step client insert could leave a phone registered with
+ *  its IP address silently dropped if the second insert failed. See migration 0046. */
 export async function createIpPhone(input: CreateIpPhoneInput): Promise<IpPhoneRow> {
-  const { data, error } = await supabase
-    .from('ip_phones')
-    .insert({
-      extension: input.extension.trim(),
-      phone_type: input.phoneType?.trim() || null,
-      department_id: input.departmentId || null,
-      status: 'active',
-      notes: input.notes?.trim() || null,
-    })
-    .select('*')
-    .single()
+  const { data, error } = await supabase.rpc('create_ip_phone', {
+    p_extension: input.extension.trim(),
+    p_phone_type: input.phoneType?.trim() || undefined,
+    p_department_id: input.departmentId || undefined,
+    p_ip_address: input.ipAddress?.trim() || undefined,
+    p_notes: input.notes?.trim() || undefined,
+  })
 
   if (error) throw error
   return data

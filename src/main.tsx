@@ -5,7 +5,10 @@ import { RouterProvider } from 'react-router-dom'
 import { AppQueryProvider } from '@/app/providers/query-client'
 import { router } from '@/app/router'
 import { AuthProvider } from '@/features/auth/context/auth-context'
+import { registerServiceWorker } from '@/lib/pwa/register-sw'
 import './index.css'
+
+registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -5,6 +5,7 @@ import {
   RotateCcw,
   Barcode,
   Calendar,
+  Archive,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionPanel, SectionHeader } from '@/components/shared/section-panel'
@@ -14,6 +15,7 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { formatDate } from './details-types'
 import { AssignPrinterDialog } from './dialogs/assign-printer-dialog'
 import { ReturnPrinterDialog } from './dialogs/return-printer-dialog'
+import { RetirePrinterDialog } from './dialogs/retire-printer-dialog'
 import type { UserCurrentPrinterData } from '../../api/user-details-api'
 import type { UserDetail } from '../../api/users-api'
 
@@ -31,6 +33,7 @@ export function PrinterSection({
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [replaceDialogOpen, setReplaceDialogOpen] = useState(false)
   const [returnDialogOpen, setReturnDialogOpen] = useState(false)
+  const [retireDialogOpen, setRetireDialogOpen] = useState(false)
 
   const hasPrinter = Boolean(currentPrinter)
   const printer = currentPrinter?.printer
@@ -62,6 +65,15 @@ export function PrinterSection({
                   >
                     <RotateCcw className="size-3.5" aria-hidden />
                     Return Printer
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRetireDialogOpen(true)}
+                    className="gap-1.5 text-destructive hover:text-destructive"
+                  >
+                    <Archive className="size-3.5" aria-hidden />
+                    Retire Printer
                   </Button>
                 </>
               ) : (
@@ -176,6 +188,15 @@ export function PrinterSection({
             onOpenChange={setReturnDialogOpen}
             userId={user.id}
             currentPrinter={currentPrinter}
+          />
+          <RetirePrinterDialog
+            open={retireDialogOpen}
+            onOpenChange={setRetireDialogOpen}
+            userId={user.id}
+            assignmentId={currentPrinter.id}
+            printerId={currentPrinter.printer_id}
+            printerLabel={`${currentPrinter.printer.printer_name} (${currentPrinter.printer.asset_id})`}
+            employeeName={user.full_name}
           />
         </>
       )}

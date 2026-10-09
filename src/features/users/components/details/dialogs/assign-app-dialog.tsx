@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Archive } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAllApplications } from '../../../hooks/user-details-queries'
-import { useAssignApplication } from '../../../hooks/user-details-mutations'
+import { useAssignApplication, useDeactivateApplication } from '../../../hooks/user-details-mutations'
 import { CreateApplicationDialog } from './create-application-dialog'
 
 interface AssignAppDialogProps {
@@ -43,8 +53,11 @@ export function AssignAppDialog({
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [retireTarget, setRetireTarget] = useState<{ id: string; name: string } | null>(null)
 
   const assignApp = useAssignApplication(userId)
+  const deactivateApp = useDeactivateApplication()
+  const selectedApp = applications.find((a) => a.id === selectedAppId)
 
   function reset() {
     setSelectedAppId('')
@@ -130,6 +143,18 @@ export function AssignAppDialog({
                 </SelectContent>
               </Select>
             )}
+            {selectedApp && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                className="gap-1 h-6 px-1.5 text-text-muted hover:text-error"
+                onClick={() => setRetireTarget({ id: selectedApp.id, name: selectedApp.name })}
+              >
+                <Archive className="size-3" aria-hidden />
+                Retire "{selectedApp.name}" From Catalog
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -201,6 +226,34 @@ export function AssignAppDialog({
       onOpenChange={setCreateOpen}
       onCreated={(id) => setSelectedAppId(id)}
     />
+
+    <AlertDialog open={Boolean(retireTarget)} onOpenChange={(next) => !next && setRetireTarget(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Retire Application From Catalog?</AlertDialogTitle>
+          <AlertDialogDescription>
+            <span className="font-semibold text-text">{retireTarget?.name}</span> will no longer be
+            available to assign to any employee. Existing assignments and their history are not
+            affected.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deactivateApp.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={deactivateApp.isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => {
+              if (!retireTarget) return
+              await deactivateApp.mutateAsync(retireTarget.id)
+              if (selectedAppId === retireTarget.id) setSelectedAppId('')
+              setRetireTarget(null)
+            }}
+          >
+            {deactivateApp.isPending ? 'Retiring…' : 'Retire From Catalog'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   )
 }

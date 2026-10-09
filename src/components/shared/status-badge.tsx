@@ -39,6 +39,8 @@ export type EntityStatusType =
   | 'free'
   | 'reserved'
   | 'unavailable'
+  // Resource (meeting room / car) statuses
+  | 'maintenance'
 
 interface StatusMeta {
   label: string
@@ -209,6 +211,11 @@ const STATUS_MAP: Record<string, StatusMeta> = {
     label: 'Unavailable',
     dotClass: 'bg-text-muted',
     badgeClass: 'bg-canvas text-text-muted border-border',
+  },
+  maintenance: {
+    label: 'Maintenance',
+    dotClass: 'bg-warning',
+    badgeClass: 'bg-canvas text-warning border-border',
   },
 }
 

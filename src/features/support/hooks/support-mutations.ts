@@ -29,19 +29,24 @@ function invalidateIssueQueries(queryClient: ReturnType<typeof useQueryClient>, 
 
 export function useCreateSupportIssueAsAdmin() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (input: CreateSupportIssueInput) => createSupportIssueForUser(input),
     onSuccess: async (created) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_CREATED',
           entityType: 'support_issues',
           entityId: created.id,
           newValues: created as unknown as Record<string, Json>,
-          metadata: { issue_number: created.issue_number, user_id: created.user_id },
+          metadata: {
+            issue_number: created.issue_number,
+            requester_id: created.user_id,
+            creator_id: appUser.id,
+          },
         })
       }
       queryClient.invalidateQueries({ queryKey: ['support', 'queue'] })
@@ -52,12 +57,13 @@ export function useCreateSupportIssueAsAdmin() {
 
 export function useAcknowledgeIssue() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (issueId: string) => acknowledgeIssue(issueId, appUser?.id ?? ''),
     onSuccess: async ({ issue }) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_ACKNOWLEDGED',
@@ -74,12 +80,13 @@ export function useAcknowledgeIssue() {
 
 export function useStartIssue() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (issueId: string) => startIssue(issueId, appUser?.id ?? ''),
     onSuccess: async ({ issue }) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_STATUS_CHANGED',
@@ -96,13 +103,14 @@ export function useStartIssue() {
 
 export function useHoldIssue() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (vars: { issueId: string; reason: string }) =>
       holdIssue(vars.issueId, appUser?.id ?? '', vars.reason),
     onSuccess: async ({ issue }) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_STATUS_CHANGED',
@@ -119,13 +127,14 @@ export function useHoldIssue() {
 
 export function useResolveIssue() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (vars: { issueId: string; resolution: string }) =>
       resolveIssue(vars.issueId, appUser?.id ?? '', vars.resolution),
     onSuccess: async ({ issue }) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_RESOLVED',
@@ -142,12 +151,13 @@ export function useResolveIssue() {
 
 export function useCloseIssue() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (issueId: string) => closeIssue(issueId, appUser?.id ?? ''),
     onSuccess: async ({ issue }) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_CLOSED',
@@ -164,19 +174,20 @@ export function useCloseIssue() {
 
 export function useAssignIssue() {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
-    mutationFn: (vars: { issueId: string; assignedTo: string }) =>
+    mutationFn: (vars: { issueId: string; assignedTo: string | null }) =>
       assignIssue(vars.issueId, appUser?.id ?? '', vars.assignedTo),
     onSuccess: async ({ issue }, vars) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_ASSIGNED',
           entityType: 'support_issues',
           entityId: issue.id,
-          metadata: { issue_number: issue.issue_number, assigned_to: vars.assignedTo },
+          metadata: { issue_number: issue.issue_number, assigned_to: vars.assignedTo ?? null },
         })
       }
       invalidateIssueQueries(queryClient, issue.id)
@@ -186,12 +197,13 @@ export function useAssignIssue() {
 
 export function useAddInternalNote(issueId: string) {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (comment: string) => addInternalNote(issueId, appUser?.id ?? '', comment),
     onSuccess: async (update) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_UPDATED',
@@ -207,13 +219,14 @@ export function useAddInternalNote(issueId: string) {
 
 export function useUploadAttachment(issueId: string) {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (file: File) =>
       uploadSupportAttachment({ issueId, file, uploadedBy: appUser?.id ?? '' } satisfies UploadAttachmentInput),
     onSuccess: async (attachment) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_ATTACHMENT_ADDED',
@@ -229,13 +242,14 @@ export function useUploadAttachment(issueId: string) {
 
 export function useDeleteAttachment(issueId: string) {
   const queryClient = useQueryClient()
-  const { appUser } = useAuth()
+  const { appUser, accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
 
   return useMutation({
     mutationFn: (vars: { attachmentId: string; storagePath: string; fileName: string }) =>
       deleteSupportAttachment(vars.attachmentId, vars.storagePath),
     onSuccess: async (_data, vars) => {
-      if (appUser) {
+      if (appUser && isItAdmin) {
         await logAuditEvent({
           actorUserId: appUser.id,
           action: 'ISSUE_ATTACHMENT_REMOVED',

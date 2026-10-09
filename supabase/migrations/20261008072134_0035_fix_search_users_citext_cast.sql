@@ -1,0 +1,11 @@
+-- Placeholder: the remote project's migration history records a
+-- "0035_fix_search_users_citext_cast" step applied after 0034. Its actual
+-- original SQL could not be recovered (not present in this local directory
+-- when this gap was discovered) — but its effect is already included in the
+-- reconstructed 0034_search_users_function.sql above, which was pulled
+-- directly from the current live, already-fixed function definition.
+--
+-- This file exists only to preserve the original numbering/timestamp so a
+-- fresh-project replay's migration history lines up with what the remote
+-- production project has recorded. It intentionally does nothing.
+select 1;

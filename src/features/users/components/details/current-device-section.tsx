@@ -10,6 +10,7 @@ import {
   Barcode,
   CheckCircle2,
   Clock,
+  Archive,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionPanel, SectionHeader } from '@/components/shared/section-panel'
@@ -19,6 +20,7 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { formatDate } from './details-types'
 import { AssignDeviceDialog } from './dialogs/assign-device-dialog'
 import { ReturnDeviceDialog } from './dialogs/return-device-dialog'
+import { RetireDeviceDialog } from './dialogs/retire-device-dialog'
 import type { UserCurrentDeviceData } from '../../api/user-details-api'
 import type { UserDetail } from '../../api/users-api'
 
@@ -49,6 +51,7 @@ export function CurrentDeviceSection({
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [replaceDialogOpen, setReplaceDialogOpen] = useState(false)
   const [returnDialogOpen, setReturnDialogOpen] = useState(false)
+  const [retireDialogOpen, setRetireDialogOpen] = useState(false)
 
   const hasDevice = Boolean(currentDevice)
   const device = currentDevice?.device
@@ -85,6 +88,15 @@ export function CurrentDeviceSection({
                     className="gap-1.5"
                   >
                     Replace Device
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRetireDialogOpen(true)}
+                    className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Archive className="size-3.5" aria-hidden />
+                    Retire Device
                   </Button>
                 </>
               ) : (
@@ -272,6 +284,20 @@ export function CurrentDeviceSection({
           onOpenChange={setReturnDialogOpen}
           userId={user.id}
           currentDevice={currentDevice}
+        />
+      )}
+
+      {/* Retire Dialog (Safe Return-and-Retire flow for active custody device) */}
+      {currentDevice && (
+        <RetireDeviceDialog
+          open={retireDialogOpen}
+          onOpenChange={setRetireDialogOpen}
+          device={currentDevice.device}
+          currentAssignment={{
+            id: currentDevice.id,
+            userId: user.id,
+            employeeName: user.full_name,
+          }}
         />
       )}
     </SectionPanel>

@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react'
 import { EmptyState } from '@/components/shared/empty-state'
+import { useAuth } from '@/features/auth/context/auth-context'
 import { useSupportIssueTimeline } from '../hooks/support-queries'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -28,19 +29,23 @@ interface IssueTimelineProps {
 }
 
 export function IssueTimeline({ issueId }: IssueTimelineProps) {
+  const { accessLevel } = useAuth()
+  const isItAdmin = accessLevel === 'it_administrator'
   const { data: timeline = [], isPending } = useSupportIssueTimeline(issueId)
+
+  const visibleTimeline = timeline.filter((entry) => !entry.is_internal || isItAdmin)
 
   if (isPending) {
     return <p className="text-xs text-text-secondary">Loading timeline…</p>
   }
 
-  if (timeline.length === 0) {
+  if (visibleTimeline.length === 0) {
     return <EmptyState title="No timeline updates yet." />
   }
 
   return (
     <ol className="space-y-3">
-      {timeline.map((entry) => (
+      {visibleTimeline.map((entry) => (
         <li key={entry.id} className="flex gap-3 text-xs">
           <div className="flex flex-col items-center shrink-0 pt-0.5">
             <span className="size-1.5 rounded-full bg-primary" aria-hidden />

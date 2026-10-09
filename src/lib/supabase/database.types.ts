@@ -657,6 +657,32 @@ export type Database = {
           },
         ]
       }
+      ip_phone_network_info: {
+        Row: {
+          ip_address: unknown | null
+          ip_phone_id: string
+          updated_at: string
+        }
+        Insert: {
+          ip_address?: unknown | null
+          ip_phone_id: string
+          updated_at?: string
+        }
+        Update: {
+          ip_address?: unknown | null
+          ip_phone_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ip_phone_network_info_ip_phone_id_fkey"
+            columns: ["ip_phone_id"]
+            isOneToOne: true
+            referencedRelation: "ip_phones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ip_phones: {
         Row: {
           created_at: string
@@ -945,6 +971,44 @@ export type Database = {
             foreignKeyName: "notifications_recipient_user_id_fkey"
             columns: ["recipient_user_id"]
             isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          notify_bookings: boolean
+          notify_support: boolean
+          push_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notify_bookings?: boolean
+          notify_support?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notify_bookings?: boolean
+          notify_support?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1349,6 +1413,53 @@ export type Database = {
           },
         ]
       }
+      system_configuration: {
+        Row: {
+          app_name: string
+          id: string
+          maintenance_message: string | null
+          maintenance_mode: boolean
+          max_booking_advance_days: number
+          max_booking_duration_hours: number
+          support_auto_acknowledge: boolean
+          support_ticket_prefix: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          app_name?: string
+          id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          max_booking_advance_days?: number
+          max_booking_duration_hours?: number
+          support_auto_acknowledge?: boolean
+          support_ticket_prefix?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          app_name?: string
+          id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          max_booking_advance_days?: number
+          max_booking_duration_hours?: number
+          support_auto_acknowledge?: boolean
+          support_ticket_prefix?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_configuration_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_applications: {
         Row: {
           application_id: string
@@ -1549,6 +1660,93 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_car_booking: {
+        Args: {
+          p_car_id: string
+          p_destination?: string
+          p_end_at: string
+          p_purpose?: string
+          p_start_at: string
+        }
+        Returns: {
+          admin_action: string | null
+          admin_action_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          car_id: string
+          created_at: string
+          destination: string | null
+          end_at: string
+          id: string
+          purpose: string | null
+          start_at: string
+          status: Database["public"]["Enums"]["booking_status_enum"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "car_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_ip_phone: {
+        Args: {
+          p_department_id?: string
+          p_extension: string
+          p_ip_address?: string
+          p_notes?: string
+          p_phone_type?: string
+        }
+        Returns: {
+          created_at: string
+          department_id: string | null
+          extension: string
+          id: string
+          notes: string | null
+          phone_type: string | null
+          status: Database["public"]["Enums"]["ip_phone_status_enum"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ip_phones"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_room_booking: {
+        Args: {
+          p_end_at: string
+          p_meeting_room_id: string
+          p_purpose?: string
+          p_start_at: string
+          p_title?: string
+        }
+        Returns: {
+          admin_action: string | null
+          admin_action_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          end_at: string
+          id: string
+          meeting_room_id: string
+          purpose: string | null
+          start_at: string
+          status: Database["public"]["Enums"]["booking_status_enum"]
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meeting_room_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_access_level: {
         Args: never
         Returns: Database["public"]["Enums"]["access_level_enum"]
@@ -1590,6 +1788,56 @@ export type Database = {
           total_count: number
           user_id: string
         }[]
+      }
+      set_car_booking_status: {
+        Args: { p_action: string; p_booking_id: string; p_reason?: string }
+        Returns: {
+          admin_action: string | null
+          admin_action_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          car_id: string
+          created_at: string
+          destination: string | null
+          end_at: string
+          id: string
+          purpose: string | null
+          start_at: string
+          status: Database["public"]["Enums"]["booking_status_enum"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "car_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_room_booking_status: {
+        Args: { p_action: string; p_booking_id: string; p_reason?: string }
+        Returns: {
+          admin_action: string | null
+          admin_action_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          end_at: string
+          id: string
+          meeting_room_id: string
+          purpose: string | null
+          start_at: string
+          status: Database["public"]["Enums"]["booking_status_enum"]
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meeting_room_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

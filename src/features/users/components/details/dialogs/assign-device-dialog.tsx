@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Archive } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import { useAvailableDevices } from '../../../hooks/user-details-queries'
 import { useAssignDevice, useReplaceDevice } from '../../../hooks/user-details-mutations'
 import { DEVICE_REPLACEMENT_REASONS } from '../details-types'
 import { CreateDeviceDialog } from './create-device-dialog'
+import { RetireDeviceDialog } from './retire-device-dialog'
 
 interface AssignDeviceDialogProps {
   open: boolean
@@ -49,6 +50,9 @@ export function AssignDeviceDialog({
   const [reason, setReason] = useState<string>(DEVICE_REPLACEMENT_REASONS[0])
   const [error, setError] = useState<string | null>(null)
   const [createDeviceOpen, setCreateDeviceOpen] = useState(false)
+  const [retireDialogOpen, setRetireDialogOpen] = useState(false)
+
+  const selectedDevice = availableDevices.find((d) => d.id === selectedDeviceId)
 
   const assignDevice = useAssignDevice(userId)
   const replaceDevice = useReplaceDevice(userId)
@@ -167,6 +171,21 @@ export function AssignDeviceDialog({
                   </SelectContent>
                 </Select>
               )}
+              {selectedDevice && (
+                <div className="flex items-center justify-between text-xs pt-0.5">
+                  <span className="text-text-muted">Selected: {selectedDevice.asset_id}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    className="gap-1 h-6 px-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setRetireDialogOpen(true)}
+                  >
+                    <Archive className="size-3" aria-hidden />
+                    Retire Asset from Inventory
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -199,6 +218,17 @@ export function AssignDeviceDialog({
         onOpenChange={setCreateDeviceOpen}
         onCreated={(deviceId) => setSelectedDeviceId(deviceId)}
       />
+
+      {selectedDevice && (
+        <RetireDeviceDialog
+          open={retireDialogOpen}
+          onOpenChange={setRetireDialogOpen}
+          device={selectedDevice}
+          onSuccess={() => {
+            setSelectedDeviceId('')
+          }}
+        />
+      )}
     </>
   )
 }

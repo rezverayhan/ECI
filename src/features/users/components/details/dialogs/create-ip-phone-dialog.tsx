@@ -32,6 +32,7 @@ export function CreateIpPhoneDialog({ open, onOpenChange, onCreated }: CreateIpP
   const [extension, setExtension] = useState('')
   const [phoneType, setPhoneType] = useState('')
   const [departmentId, setDepartmentId] = useState<string>('')
+  const [ipAddress, setIpAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -41,6 +42,7 @@ export function CreateIpPhoneDialog({ open, onOpenChange, onCreated }: CreateIpP
     setExtension('')
     setPhoneType('')
     setDepartmentId('')
+    setIpAddress('')
     setNotes('')
     setError(null)
   }
@@ -58,6 +60,7 @@ export function CreateIpPhoneDialog({ open, onOpenChange, onCreated }: CreateIpP
         extension: extension.trim(),
         phoneType: phoneType.trim() || null,
         departmentId: departmentId || null,
+        ipAddress: ipAddress.trim() || null,
         notes: notes.trim() || null,
       })
       reset()
@@ -109,6 +112,11 @@ export function CreateIpPhoneDialog({ open, onOpenChange, onCreated }: CreateIpP
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="phone-ip">Phone IP Address (Optional)</Label>
+            <Input id="phone-ip" value={ipAddress} onChange={(e) => setIpAddress(e.target.value)} placeholder="e.g. 10.200.198.50" className="font-mono" />
           </div>
 
           <div className="space-y-1.5">

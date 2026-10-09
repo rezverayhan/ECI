@@ -1,0 +1,18 @@
+{
+  "name": "ECI User Management",
+  "short_name": "ECI",
+  "description": "Internal IT and employee management for ECI.",
+  "start_url": "/app/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F7F5",
+  "theme_color": "#315EFB",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

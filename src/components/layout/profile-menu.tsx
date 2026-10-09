@@ -24,7 +24,7 @@ export function ProfileMenu() {
         render={
           <button
             type="button"
-            className="flex items-center gap-2 rounded-lg p-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex size-11 items-center justify-center gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:size-auto sm:justify-start sm:p-1"
             aria-label="Account menu"
           >
             <UserAvatar fullName={appUser.full_name} size="sm" />

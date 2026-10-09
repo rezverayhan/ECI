@@ -76,6 +76,13 @@ export function IpPhoneSection({ userId, employeeName, currentIpPhone, isItAdmin
         <InfoMatrix columns={3}>
           <InfoField label="Extension" value={phone!.extension} mono />
           <InfoField label="Phone Type" value={phone!.phone_type} />
+          {isItAdmin && (
+            <InfoField
+              label="Phone IP Address"
+              value={phone!.ip_phone_network_info?.ip_address != null ? String(phone!.ip_phone_network_info.ip_address) : null}
+              mono
+            />
+          )}
           <InfoField label="Status" value={<StatusBadge status="assigned" />} />
           <InfoField label="Assigned Since" value={formatDate(currentIpPhone!.assigned_at)} />
           <InfoField label="Department Routing" value={phone!.department?.name} />

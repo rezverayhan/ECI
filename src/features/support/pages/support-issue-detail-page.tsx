@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { ChevronRight, LifeBuoy } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft, ChevronRight, LifeBuoy } from 'lucide-react'
 import { LoadingState } from '@/components/shared/loading-state'
 import { ErrorState } from '@/components/shared/error-state'
 import { StatusBadge } from '@/components/shared/status-badge'
@@ -58,38 +57,103 @@ function formatDuration(startIso: string, endIso: string): string {
 
 export function SupportIssueDetailPage() {
   const { issueId } = useParams<{ issueId: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { accessLevel, appUser } = useAuth()
   const isItAdmin = accessLevel === 'it_administrator'
   const isGeneralManager = accessLevel === 'general_manager'
+  const canAccessQueue = isItAdmin || isGeneralManager
 
   const { data: issue, isPending, isError, refetch } = useSupportIssueDetail(issueId)
 
   const acknowledge = useAcknowledgeIssue()
   const start = useStartIssue()
   const close = useCloseIssue()
+  const isPendingAction = acknowledge.isPending || start.isPending || close.isPending
 
   const [holdOpen, setHoldOpen] = useState(false)
   const [resolveOpen, setResolveOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<'acknowledge' | 'start' | 'close' | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
+  function getBackTarget(userIssueId?: string | null) {
+    const fallbackPath = canAccessQueue
+      ? '/app/support'
+      : (appUser?.id || userIssueId)
+        ? `/app/users/${appUser?.id ?? userIssueId}`
+        : '/app/dashboard'
+
+    const fallbackLabel = canAccessQueue
+      ? 'IT Support'
+      : (appUser?.id || userIssueId)
+        ? 'Employee 360'
+        : 'Dashboard'
+
+    const locationState = location.state as { from?: unknown; fromLabel?: unknown } | null
+
+    if (typeof locationState?.from === 'string' && locationState.from.startsWith('/app/')) {
+      const rawFrom = locationState.from
+      const customLabel = typeof locationState.fromLabel === 'string' ? locationState.fromLabel : undefined
+
+      if (rawFrom === '/app/support' || rawFrom.startsWith('/app/support?')) {
+        if (canAccessQueue) {
+          return { path: rawFrom, label: customLabel ?? 'IT Support' }
+        }
+      } else if (rawFrom === '/app/users' || rawFrom.startsWith('/app/users?')) {
+        if (isItAdmin) {
+          return { path: rawFrom, label: customLabel ?? 'Users' }
+        }
+      } else if (rawFrom.startsWith('/app/users/')) {
+        const rest = rawFrom.slice('/app/users/'.length)
+        const targetUserId = rest.split('/')[0]?.split('?')[0]
+        if (isItAdmin || (targetUserId && targetUserId === appUser?.id)) {
+          return { path: rawFrom, label: customLabel ?? 'Employee 360' }
+        }
+      } else {
+        return { path: rawFrom, label: customLabel ?? 'Back' }
+      }
+    }
+
+    return { path: fallbackPath, label: fallbackLabel }
+  }
+
   if (isPending) {
     return <LoadingState label="Loading support issue…" />
   }
 
   if (isError || !issue) {
+    const backTarget = getBackTarget(null)
     return (
-      <ErrorState
-        title="Issue couldn't be loaded"
-        description="This issue may not exist, or you may not have authorization to view it."
-        onRetry={() => refetch()}
-      />
+      <div className="flex flex-col gap-6">
+        <nav aria-label="Breadcrumbs" className="flex items-center gap-1.5 text-xs text-text-secondary">
+          <Link
+            to={backTarget.path}
+            className="inline-flex items-center gap-1 hover:text-text transition-colors"
+          >
+            <ArrowLeft className="size-3.5 text-text-muted" aria-hidden />
+            <span>{backTarget.label}</span>
+          </Link>
+          <ChevronRight className="size-3.5 text-text-muted" aria-hidden />
+          <span className="font-medium text-text">Support Issue</span>
+        </nav>
+        <ErrorState
+          title="Issue couldn't be loaded"
+          description="This issue may not exist, or you may not have authorization to view it."
+          onRetry={() => refetch()}
+        />
+        <div className="flex justify-center">
+          <Button variant="outline" size="sm" onClick={() => navigate(backTarget.path)}>
+            Back to {backTarget.label}
+          </Button>
+        </div>
+      </div>
     )
   }
 
   const isOwnIssue = issue.user_id === appUser?.id
   const canSeeAssignment = isItAdmin || isGeneralManager
   const canMutate = isItAdmin
+  const backTarget = getBackTarget(issue.user_id)
 
   async function runConfirmedAction() {
     setActionError(null)
@@ -106,8 +170,12 @@ export function SupportIssueDetailPage() {
   return (
     <div className="flex flex-col gap-6">
       <nav aria-label="Breadcrumbs" className="flex items-center gap-1.5 text-xs text-text-secondary">
-        <Link to="/app/support" className="hover:text-text transition-colors">
-          IT Support
+        <Link
+          to={backTarget.path}
+          className="inline-flex items-center gap-1 hover:text-text transition-colors"
+        >
+          <ArrowLeft className="size-3.5 text-text-muted" aria-hidden />
+          <span>{backTarget.label}</span>
         </Link>
         <ChevronRight className="size-3.5 text-text-muted" aria-hidden />
         <span className="font-medium text-text">{issue.issue_number}</span>
@@ -132,27 +200,27 @@ export function SupportIssueDetailPage() {
           {canMutate && (
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               {issue.status === 'submitted' && (
-                <Button size="sm" variant="outline" onClick={() => setConfirmAction('acknowledge')}>
+                <Button size="sm" variant="outline" disabled={isPendingAction} onClick={() => setConfirmAction('acknowledge')}>
                   Acknowledge
                 </Button>
               )}
               {(issue.status === 'submitted' || issue.status === 'acknowledged' || issue.status === 'waiting_on_hold') && (
-                <Button size="sm" variant="outline" onClick={() => setConfirmAction('start')}>
+                <Button size="sm" variant="outline" disabled={isPendingAction} onClick={() => setConfirmAction('start')}>
                   Start Work
                 </Button>
               )}
               {(issue.status === 'acknowledged' || issue.status === 'in_progress') && (
-                <Button size="sm" variant="outline" onClick={() => setHoldOpen(true)}>
+                <Button size="sm" variant="outline" disabled={isPendingAction} onClick={() => setHoldOpen(true)}>
                   Hold
                 </Button>
               )}
               {issue.status !== 'resolved' && issue.status !== 'closed' && (
-                <Button size="sm" onClick={() => setResolveOpen(true)}>
+                <Button size="sm" disabled={isPendingAction} onClick={() => setResolveOpen(true)}>
                   Resolve
                 </Button>
               )}
               {issue.status === 'resolved' && (
-                <Button size="sm" onClick={() => setConfirmAction('close')}>
+                <Button size="sm" disabled={isPendingAction} onClick={() => setConfirmAction('close')}>
                   Close
                 </Button>
               )}
@@ -233,7 +301,15 @@ export function SupportIssueDetailPage() {
       </div>
 
       {/* Quick confirmations for low-friction transitions */}
-      <AlertDialog open={Boolean(confirmAction)} onOpenChange={(open) => !open && setConfirmAction(null)}>
+      <AlertDialog
+        open={Boolean(confirmAction)}
+        onOpenChange={(open) => {
+          if (!open && !isPendingAction) {
+            setConfirmAction(null)
+            setActionError(null)
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -249,8 +325,16 @@ export function SupportIssueDetailPage() {
           </AlertDialogHeader>
           {actionError && <p className="text-xs text-error">{actionError}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={runConfirmedAction}>Confirm</AlertDialogAction>
+            <AlertDialogCancel disabled={isPendingAction}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPendingAction}
+              onClick={(e) => {
+                e.preventDefault()
+                runConfirmedAction()
+              }}
+            >
+              {isPendingAction ? 'Processing…' : 'Confirm'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

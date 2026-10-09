@@ -15,7 +15,7 @@ export function UserCreatePage() {
   async function handleSubmit(values: UserFormValues) {
     setServerError(null)
     try {
-      const created = await createUser.mutateAsync({
+      const result = await createUser.mutateAsync({
         full_name: values.fullName,
         employee_id: emptyToNull(values.employeeId),
         user_id: values.userId,
@@ -28,8 +28,12 @@ export function UserCreatePage() {
         employment_status: values.employmentStatus,
         access_level: values.accessLevel,
       })
-      navigate(`/app/users/${created.id}`, {
-        state: { toast: 'User created successfully.' },
+      navigate(`/app/users/${result.user.id}`, {
+        state: {
+          toast: result.accountProvisioned
+            ? 'User created successfully. A secure account-setup email has been sent.'
+            : `User record created, but the login account could not be provisioned automatically (${result.provisionError}). Use "Provision Login Account" on their profile to retry.`,
+        },
       })
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error) {
